@@ -64,6 +64,7 @@ public class GameState {
         }
         return true;
     }
+    
     public boolean isValidMove(int row, int col) {
         if (!inBounds(row, col) || board[row][col] != ' ' || gameOver) {
             return false;

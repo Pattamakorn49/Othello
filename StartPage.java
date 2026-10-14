@@ -122,6 +122,24 @@ public class StartPage extends JFrame {
             return;
         }
 
+        // EDIT 1.2: both players cannot use the same name
+        if (player1.equalsIgnoreCase(player2)) {
+            JOptionPane.showMessageDialog(
+                    this,
+                    "Players must have different names"
+            );
+            return;
+        }
+
+        // EDIT 1.1: '|' is used to separate data in score.txt
+        if (player1.contains("|") || player2.contains("|")) {
+            JOptionPane.showMessageDialog(
+                    this,
+                    "Names cannot contain the '|' character"
+            );
+            return;
+        }
+
         if (Score.hasSavedGame()) {
             int choice = JOptionPane.showConfirmDialog(
                     this,

@@ -93,35 +93,17 @@ public class Score {
         }
     }
 
-    public static void addWin(String playerName) {
+    private static void addResult(String playerName, int index) {
         if (playerName == null || playerName.trim().isEmpty()) return;
 
         Map<String, int[]> scores = readScore();
-        int[] score = scores.getOrDefault(playerName, new int[]{0, 0, 0});
-        score[0]++;
-        scores.put(playerName, score);
+        scores.computeIfAbsent(playerName, k -> new int[]{0, 0, 0})[index]++;
         writeScore(scores);
     }
-
-    public static void addLoss(String playerName) {
-        if (playerName == null || playerName.trim().isEmpty()) return;
-
-        Map<String, int[]> scores = readScore();
-        int[] score = scores.getOrDefault(playerName, new int[]{0, 0, 0});
-        score[1]++;
-        scores.put(playerName, score);
-        writeScore(scores);
-    }
-
-    public static void addDraw(String playerName) {
-        if (playerName == null || playerName.trim().isEmpty()) return;
-
-        Map<String, int[]> scores = readScore();
-        int[] score = scores.getOrDefault(playerName, new int[]{0, 0, 0});
-        score[2]++;
-        scores.put(playerName, score);
-        writeScore(scores);
-    }
+    
+    public static void addWin(String n)  { addResult(n, 0); }
+    public static void addLoss(String n) { addResult(n, 1); }
+    public static void addDraw(String n) { addResult(n, 2); }
 
     public static String getScoreText() {
         Map<String, int[]> scores = readScore();
