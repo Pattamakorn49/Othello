@@ -1,83 +1,116 @@
 import java.awt.*;
+import java.awt.event.ComponentAdapter;
+import java.awt.event.ComponentEvent;
+import java.awt.image.BufferedImage;
+import java.io.File;
+import java.io.IOException;
+import javax.imageio.ImageIO;
 import javax.swing.*;
 
 public class StartPage extends JFrame {
     private JTextField player1Field;
     private JTextField player2Field;
+    private JButton continueButton;
+
+    private static final int BG_W = 350;
+    private static final int BG_H = 420;
+    private BufferedImage background;
 
     public StartPage() {
         Score.ensureFiles();
+        loadBackground();
         setTitle("Othello");
-        setSize(350, 420);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setLocationRelativeTo(null);
+        setResizable(false);
 
-        JPanel panel = new JPanel();
-        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
+        // Panel that paints start_bg.png as the whole page background
+        JPanel panel = new JPanel(null) {
+            @Override
+            protected void paintComponent(Graphics g) {
+                super.paintComponent(g);
+                if (background != null) {
+                    g.drawImage(background, 0, 0, getWidth(), getHeight(), this);
+                }
+            }
+        };
+        panel.setPreferredSize(new Dimension(BG_W, BG_H));
+        panel.setBackground(new Color(205, 197, 250));
 
-        JLabel title = new JLabel("OTHELLO");
-        title.setFont(new Font("Tahoma", Font.BOLD, 30));
-        title.setAlignmentX(Component.CENTER_ALIGNMENT);
-
+        // Inputs and buttons sit inside the light rounded box of the image
         player1Field = new JTextField();
         player1Field.setBorder(BorderFactory.createTitledBorder("Player 1 (Black)"));
-        player1Field.setMaximumSize(new Dimension(300, 50));
+        player1Field.setBounds(68, 148, 214, 48);
 
         player2Field = new JTextField();
         player2Field.setBorder(BorderFactory.createTitledBorder("Player 2 (White)"));
-        player2Field.setMaximumSize(new Dimension(300, 50));
+        player2Field.setBounds(68, 198, 214, 48);
 
         JButton startButton = new JButton("START");
-        startButton.setMaximumSize(new Dimension(150, 40));
-        startButton.setAlignmentX(Component.CENTER_ALIGNMENT);
+        startButton.setBounds(100, 258, 150, 34);
         startButton.addActionListener(e -> startGame());
 
+        continueButton = new JButton("CONTINUE");
+        continueButton.setBounds(100, 296, 150, 34);
+        continueButton.addActionListener(e -> continueGame());
+
         JButton historyButton = new JButton("HISTORY");
-        historyButton.setMaximumSize(new Dimension(150, 40));
-        historyButton.setAlignmentX(Component.CENTER_ALIGNMENT);
+        historyButton.setBounds(100, 334, 150, 34);
         historyButton.addActionListener(e -> showHistory());
 
-        panel.add(Box.createVerticalStrut(25));
-        panel.add(title);
-        panel.add(Box.createVerticalStrut(25));
         panel.add(player1Field);
-        panel.add(Box.createVerticalStrut(15));
         panel.add(player2Field);
-        panel.add(Box.createVerticalStrut(20));
         panel.add(startButton);
-        panel.add(Box.createVerticalStrut(10));
+        panel.add(continueButton);
         panel.add(historyButton);
 
-        add(panel);
+        // Re-check for a saved game every time this page is shown again
+        addComponentListener(new ComponentAdapter() {
+            @Override
+            public void componentShown(ComponentEvent e) {
+                updateContinueButton();
+            }
+        });
+        updateContinueButton();
+
+        setContentPane(panel);
+        pack();
+        setLocationRelativeTo(null);
+    }
+
+    private void loadBackground() {
+        try {
+            File file = new File(System.getProperty("user.dir"), "start_bg.png");
+            if (file.exists()) {
+                background = ImageIO.read(file);
+            }
+        } catch (IOException e) {
+            System.out.println("Could not load start_bg.png: " + e.getMessage());
+        }
+    }
+
+    private void updateContinueButton() {
+        continueButton.setEnabled(Score.hasSavedGame());
+    }
+
+    private void continueGame() {
+        Score.SavedGame savedGame = Score.loadGame();
+        if (savedGame == null || !Score.hasSavedGame()) {
+            JOptionPane.showMessageDialog(this, "No unfinished game found");
+            updateContinueButton();
+            return;
+        }
+
+        GamePanel game = new GamePanel(
+                savedGame.playerX,
+                savedGame.playerO,
+                savedGame,
+                this
+        );
+        game.setVisible(true);
+        setVisible(false);
     }
 
     private void startGame() {
-        if (Score.hasSavedGame()) {
-            int choice = JOptionPane.showConfirmDialog(
-                    this,
-                    "An unfinished Othello game was found.\n"
-                            + "Would you like to continue the previous game?",
-                    "Saved Game",
-                    JOptionPane.YES_NO_OPTION
-            );
-
-            if (choice == JOptionPane.YES_OPTION) {
-                Score.SavedGame savedGame = Score.loadGame();
-
-                if (savedGame != null) {
-                    GamePanel game = new GamePanel(
-                            savedGame.playerX,
-                            savedGame.playerO,
-                            savedGame,
-                            this
-                    );
-                    game.setVisible(true);
-                    setVisible(false);
-                    return;
-                }
-            }
-        }
-
         String player1 = player1Field.getText().trim();
         String player2 = player2Field.getText().trim();
 
@@ -87,6 +120,19 @@ public class StartPage extends JFrame {
                     "Please enter names for both players"
             );
             return;
+        }
+
+        if (Score.hasSavedGame()) {
+            int choice = JOptionPane.showConfirmDialog(
+                    this,
+                    "Starting a new game will discard the unfinished game.\n"
+                            + "Continue?",
+                    "New Game",
+                    JOptionPane.YES_NO_OPTION,
+                    JOptionPane.WARNING_MESSAGE
+            );
+            if (choice != JOptionPane.YES_OPTION) return;
+            Score.clearSavedGame();
         }
 
         GamePanel game = new GamePanel(player1, player2, this);
