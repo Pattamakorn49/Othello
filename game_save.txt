@@ -1,4 +1,0 @@
-PlayerX=
-PlayerO=
-Board=
-CurrentPlayer=
